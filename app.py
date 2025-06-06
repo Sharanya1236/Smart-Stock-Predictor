@@ -12,7 +12,7 @@ import os
 st.set_page_config(page_title="StockSense", page_icon="📈", layout="centered")
 
 # --- Load logo safely ---
-logo_path = "assets/logo.jpeg"
+logo_path = "logo.jpeg"
 if os.path.exists(logo_path):
     logo = Image.open(logo_path)
 else:
