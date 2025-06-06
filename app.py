@@ -6,18 +6,23 @@ from sklearn.ensemble import RandomForestRegressor
 from datetime import datetime, timedelta
 from PIL import Image
 import altair as alt
+import os
 
 # --- Page config ---
 st.set_page_config(page_title="StockSense", page_icon="📈", layout="centered")
 
-# --- Load logo ---
+# --- Load logo safely ---
 logo_path = "assets/logo.jpeg"
-logo = Image.open(logo_path)
+if os.path.exists(logo_path):
+    logo = Image.open(logo_path)
+else:
+    logo = None  # fallback if image is missing
 
 # --- Header ---
 col1, col2 = st.columns([1, 6])
 with col1:
-    st.image(logo, width=80)
+    if logo:
+        st.image(logo, width=80)
 with col2:
     st.markdown(
         """
@@ -26,6 +31,7 @@ with col2:
         """,
         unsafe_allow_html=True
     )
+
 
 st.markdown("---")
 
