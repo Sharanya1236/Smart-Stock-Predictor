@@ -53,58 +53,59 @@ Pick your preferred market, choose a company, and use our AI models to generate 
 
 st.markdown("---")
 
-# --- Company dropdowns by country ---
-company_map = {
-    "India (NSE)": {
-        "RELIANCE": "RELIANCE.NS",
-        "TCS": "TCS.NS",
-        "INFY": "INFY.NS",
-        "HDFC Bank": "HDFCBANK.NS",
-        "ICICI Bank": "ICICIBANK.NS"
-    },
-    "US (NYSE/NASDAQ)": {
-        "Apple": "AAPL",
-        "Microsoft": "MSFT",
-        "Google": "GOOGL",
-        "Amazon": "AMZN",
-        "Tesla": "TSLA"
-    },
-    "UK (LSE)": {
-        "HSBC": "HSBA.L",
-        "BP": "BP.L",
-        "GlaxoSmithKline": "GSK.L",
-        "Barclays": "BARC.L",
-        "Vodafone": "VOD.L"
-    },
-    "Germany (DAX)": {
-        "Siemens": "SIE.DE",
-        "SAP": "SAP.DE",
-        "BMW": "BMW.DE",
-        "Volkswagen": "VOW3.DE",
-        "Allianz": "ALV.DE"
-    },
-    "Japan (TSE)": {
-        "Toyota": "7203.T",
-        "Sony": "6758.T",
-        "Nintendo": "7974.T",
-        "Mitsubishi": "8058.T",
-        "SoftBank": "9984.T"
-    },
-    "Australia (ASX)": {
-        "BHP": "BHP.AX",
-        "CSL": "CSL.AX",
-        "Telstra": "TLS.AX",
-        "Wesfarmers": "WES.AX",
-        "Commonwealth Bank": "CBA.AX"
-    }
+# --- Import full ticker list by country (extensive) ---
+from yfinance import tickers
+
+# Replace this with actual company data per country if available
+def get_all_tickers_for_country(country_code):
+    try:
+        all_tickers = yf.Tickers(" ").tickers
+        return {t: t for t in sorted(all_tickers.keys()) if t.endswith(country_code)}
+    except:
+        return {}
+
+country_market_codes = {
+    "India (NSE)": ".NS",
+    "US (NYSE/NASDAQ)": "",
+    "UK (LSE)": ".L",
+    "Germany (DAX)": ".DE",
+    "Japan (TSE)": ".T",
+    "Australia (ASX)": ".AX",
+    "France (CAC 40)": ".PA",
+    "Canada (TSX)": ".TO",
+    "China (HKEX)": ".HK",
+    "South Korea (KRX)": ".KS",
+    "Brazil (B3)": ".SA",
+    "Russia (MOEX)": ".ME",
+    "South Africa (JSE)": ".JO",
+    "Switzerland (SIX)": ".SW",
+    "Sweden (Nasdaq Stockholm)": ".ST",
+    "Singapore (SGX)": ".SI",
+    "Mexico (BMV)": ".MX",
+    "Italy (Borsa Italiana)": ".MI",
+    "Netherlands (Euronext Amsterdam)": ".AS"
 }
 
 # --- Sidebar ---
 st.sidebar.header("📊 Configuration")
-selected_country = st.sidebar.selectbox("Select Country/Market", list(company_map.keys()))
-company_list = list(company_map[selected_country].keys())
-selected_company = st.sidebar.selectbox("Select Company", company_list)
-ticker = company_map[selected_country][selected_company]
+selected_country = st.sidebar.selectbox("Select Country/Market", list(country_market_codes.keys()))
+
+if "ticker_map" not in st.session_state:
+    st.session_state.ticker_map = {}
+
+if selected_country not in st.session_state.ticker_map:
+    market_suffix = country_market_codes[selected_country]
+    with st.spinner("Loading company list..."):
+        tickers_dict = get_all_tickers_for_country(market_suffix)
+        st.session_state.ticker_map[selected_country] = tickers_dict
+
+company_map = st.session_state.ticker_map[selected_country]
+if not company_map:
+    st.error("No companies found for this country. Try another or check later.")
+    st.stop()
+
+selected_company = st.sidebar.selectbox("Select Company", list(company_map.keys()))
+ticker = company_map[selected_company]
 days = st.sidebar.slider("Days to Predict", 1, 10, 5)
 
 # --- Predict Button ---
