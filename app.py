@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="StockSense", page_icon="📈", layout="wide")
 
 # --- Load logo ---
-logo_path = "assets/logo.jpeg"
+logo_path = "logo.jpeg"
 logo = Image.open(logo_path)
 
 # --- Header ---
