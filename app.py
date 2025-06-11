@@ -222,8 +222,13 @@ if st.button("🔮 Predict Next Days"):
         )
         st.altair_chart(pred_chart, use_container_width=True)
 
-st.markdown("---")
-
+st.markdown("""
+---
+### 🔎 About This App
+StockSense is built using Python, Streamlit, scikit-learn, and yFinance.
+It empowers users to make smarter decisions with historical data insights and machine learning.
+This project is intended for educational and informational purposes.
+""")
 # --- Footer ---
 st.markdown("""
     <div style='text-align:center; font-size:13px; color: gray;'>
@@ -233,10 +238,3 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-st.markdown("""
----
-### 🔎 About This App
-StockSense is built using Python, Streamlit, scikit-learn, and yFinance.
-It empowers users to make smarter decisions with historical data insights and machine learning.
-This project is intended for educational and informational purposes.
-""")
