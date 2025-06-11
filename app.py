@@ -10,7 +10,7 @@ from PIL import Image
 # --- Page config ---
 st.set_page_config(page_title="StockSense", page_icon="📈", layout="wide")
 
-# --- Header with logo ---
+# --- Header with logo and description ---
 st.markdown("""
     <style>
     .main-title {
@@ -23,9 +23,9 @@ st.markdown("""
         color: #bbbbbb;
     }
     .description {
-        font-size: 0.95em;
+        font-size: 1em;
         color: #dddddd;
-        padding-bottom: 15px;
+        padding-bottom: 20px;
     }
     .block-container {
         padding: 2rem 2rem 2rem 2rem;
@@ -46,7 +46,8 @@ with col2:
 
 st.markdown("""
 <div class='description'>
-Easily select a country and company to forecast stock prices. Powered by historical market data and machine learning.
+Welcome to <b>StockSense</b> — a smart and interactive platform to forecast global stock prices.
+Pick your preferred market, choose a company, and use our AI models to generate short-term predictions, complete with visualizations and downloadable results.
 </div>
 """, unsafe_allow_html=True)
 
@@ -74,6 +75,27 @@ company_map = {
         "GlaxoSmithKline": "GSK.L",
         "Barclays": "BARC.L",
         "Vodafone": "VOD.L"
+    },
+    "Germany (DAX)": {
+        "Siemens": "SIE.DE",
+        "SAP": "SAP.DE",
+        "BMW": "BMW.DE",
+        "Volkswagen": "VOW3.DE",
+        "Allianz": "ALV.DE"
+    },
+    "Japan (TSE)": {
+        "Toyota": "7203.T",
+        "Sony": "6758.T",
+        "Nintendo": "7974.T",
+        "Mitsubishi": "8058.T",
+        "SoftBank": "9984.T"
+    },
+    "Australia (ASX)": {
+        "BHP": "BHP.AX",
+        "CSL": "CSL.AX",
+        "Telstra": "TLS.AX",
+        "Wesfarmers": "WES.AX",
+        "Commonwealth Bank": "CBA.AX"
     }
 }
 
@@ -86,7 +108,8 @@ ticker = company_map[selected_country][selected_company]
 days = st.sidebar.slider("Days to Predict", 1, 10, 5)
 
 # --- Predict Button ---
-st.markdown("### 📈 Prediction Tool")
+st.markdown("## 📈 Forecast Stock Prices")
+st.markdown("Use the configuration panel to choose a country, company, and number of days to forecast. Then click below.")
 if st.button("🔮 Predict Next Days"):
     st.info(f"Fetching and predicting data for **{selected_company} ({ticker})**...")
 
@@ -94,8 +117,8 @@ if st.button("🔮 Predict Next Days"):
     if data.empty:
         st.error("No data found for this company. Please try another.")
     else:
-        # --- Show historical chart ---
-        st.subheader("Historical Closing Prices")
+        # --- Historical Chart ---
+        st.subheader("📉 Historical Closing Prices")
         hist_df = data.reset_index()
         hist_chart = alt.Chart(hist_df).mark_line().encode(
             x='Date:T',
@@ -107,7 +130,7 @@ if st.button("🔮 Predict Next Days"):
         )
         st.altair_chart(hist_chart, use_container_width=True)
 
-        # --- Train model ---
+        # --- Train Model ---
         df = data[['Close']].copy()
         df['Day'] = np.arange(len(df))
         X = df[['Day']]
@@ -129,7 +152,7 @@ if st.button("🔮 Predict Next Days"):
         csv = pred_df.to_csv(index=False).encode('utf-8')
         st.download_button("⬇️ Download Predictions", csv, f"{selected_company}_predictions.csv", "text/csv")
 
-        # --- Show predicted chart ---
+        # --- Predicted Chart ---
         pred_chart = alt.Chart(pred_df).mark_line(color='orange').encode(
             x='Date:T',
             y='Predicted Close:Q',
@@ -145,8 +168,16 @@ st.markdown("---")
 # --- Footer ---
 st.markdown("""
     <div style='text-align:center; font-size:13px; color: gray;'>
-        Developed by <b>Sharanya Godishala</b> | 
-        <a href='https://github.com/Sharanya1236' target='_blank'>GitHub</a> | 
+        Developed by <b>Sharanya Godishala</b> |
+        <a href='https://github.com/Sharanya1236' target='_blank'>GitHub</a> |
         <a href='https://www.linkedin.com/in/sharanya-godishala-a16998313/' target='_blank'>LinkedIn</a>
     </div>
 """, unsafe_allow_html=True)
+
+st.markdown("""
+---
+### 🔎 About This App
+StockSense is built using Python, Streamlit, scikit-learn, and yFinance.
+It empowers users to make smarter decisions with historical data insights and machine learning.
+This project is intended for educational and informational purposes.
+""")
