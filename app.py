@@ -201,12 +201,3 @@ else:
         - **Conclusion:** The forecast should be seen as a mathematical extension of the historical price curve, not as financial advice.
         """)
 
-# --- Footer ---
-st.markdown("---")
-st.markdown("""
-    <div style='text-align:center; font-size:13px; color: gray;'>
-        Developed by <b>Sharanya Godishala</b> |
-        <a href='https://github.com/Sharanya1236' target='_blank'>GitHub</a> |
-        <a href='https://www.linkedin.com/in/sharanya-godishala-a16998313/' target='_blank'>LinkedIn</a>
-    </div>
-""", unsafe_allow_html=True)
