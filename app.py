@@ -8,71 +8,9 @@ import altair as alt
 from PIL import Image
 
 # --- Page config ---
-st.set_page_config(page_title="StockSense", page_icon="📈", layout="wide")
+st.set_page_config(page_title="StockSense", page_icon="💹", layout="wide")
 
-# --- Header with logo and description ---
-st.markdown("""
-    <style>
-    .main-title {
-        font-size: 3em;
-        font-weight: bold;
-        margin-bottom: 0;
-    }
-    .sub-title {
-        font-size: 1.2em;
-        color: #bbbbbb;
-    }
-    .description {
-        font-size: 1em;
-        color: #dddddd;
-        padding-bottom: 20px;
-    }
-    .block-container {
-        padding: 2rem 2rem 2rem 2rem;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-col1, col2 = st.columns([1, 6])
-with col1:
-    try:
-        logo = Image.open("logo.jpeg")
-        st.image(logo, width=80)
-    except:
-        st.image("https://img.icons8.com/fluency/96/stock-share.png", width=80)
-with col2:
-    st.markdown("<div class='main-title'>StockSense</div>", unsafe_allow_html=True)
-    st.markdown("<div class='sub-title'>Your AI-powered stock forecasting companion</div>", unsafe_allow_html=True)
-
-st.markdown("""
-<div class='description'>
-Welcome to <b>StockSense</b> — a smart and interactive platform to forecast global stock prices.
-Pick your preferred market, choose a company, and use our AI models to generate short-term predictions, complete with visualizations and downloadable results.<br><br>
-Currently supported markets include:
-<ul>
-    <li><b>India (NSE)</b> — with companies like Reliance, TCS, Infosys, and more</li>
-    <li><b>US (NYSE/NASDAQ)</b> — with tech giants like Apple, Microsoft, Google, Amazon, and Tesla</li>
-    <li><b>UK (LSE)</b> — featuring HSBC, BP, Barclays, and more</li>
-    <li><b>Germany (FWB)</b> — with SAP, Siemens, Volkswagen</li>
-    <li><b>Japan (TSE)</b> — with Toyota, Sony, SoftBank</li>
-    <li><b>South Korea (KRX)</b> — with Samsung, Hyundai, SK Hynix</li>
-    <li><b>Brazil (B3)</b> — with Vale, Petrobras, Itaú Unibanco</li>
-    <li><b>Russia (MOEX)</b> — with Gazprom, Sberbank, Lukoil</li>
-    <li><b>South Africa (JSE)</b> — with Sasol, Naspers, Standard Bank</li>
-    <li><b>Switzerland (SIX)</b> — with Nestlé, Roche, Novartis</li>
-    <li><b>Sweden (Nasdaq Stockholm)</b> — with Ericsson, Volvo, H&M</li>
-    <li><b>Singapore (SGX)</b> — with SingTel, DBS, Keppel Corp</li>
-    <li><b>Mexico (BMV)</b> — with América Móvil, Cemex, Grupo Bimbo</li>
-    <li><b>Italy (Borsa Italiana)</b> — with Enel, Eni, UniCredit</li>
-    <li><b>Netherlands (Euronext Amsterdam)</b> — with ASML, Philips, Heineken</li>
-</ul>
-More countries and companies are being added soon for broader coverage!
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("---")
-
-# --- Hardcoded top companies by country ---
+# --- Hardcoded top companies by country (could be moved to a separate file) ---
 top_companies_by_country = {
     "India (NSE)": {
         "Reliance Industries": "RELIANCE.NS",
@@ -157,79 +95,114 @@ top_companies_by_country = {
     }
 }
 
-# --- Sidebar ---
+
+# --- Header ---
+col1, col2 = st.columns([1, 6])
+with col1:
+    st.image("https://img.icons8.com/fluency/96/stock-share.png", width=80)
+with col2:
+    st.title("StockSense")
+    st.caption("Your AI-powered stock forecasting companion")
+
+# --- Introduction Expander ---
+with st.expander("ℹ️ About StockSense & Supported Markets", expanded=False):
+    st.markdown("""
+    Welcome to <b>StockSense</b> — an interactive platform to forecast global stock prices using a simplified AI model.
+    Pick a market and company from the sidebar to see historical trends and generate short-term predictions.
+    
+    *This app is for educational purposes only and should not be used for financial advice.*
+    """, unsafe_allow_html=True)
+    # You can list the countries here if you wish
+
+st.markdown("---")
+
+
+# --- Sidebar Configuration ---
 st.sidebar.header("📊 Configuration")
 selected_country = st.sidebar.selectbox("Select Country/Market", list(top_companies_by_country.keys()))
 
 company_map = top_companies_by_country[selected_country]
 selected_company = st.sidebar.selectbox("Select Company", list(company_map.keys()))
 ticker = company_map[selected_company]
-days = st.sidebar.slider("Days to Predict", 1, 10, 5)
+days = st.sidebar.slider("Days to Predict", 1, 10, 5, help="Select the number of days into the future to forecast.")
 
-# --- Predict Button ---
-st.markdown("## 📈 Forecast Stock Prices")
-st.markdown("Use the configuration panel to choose a country, company, and number of days to forecast. Then click below.")
-if st.button("🔮 Predict Next Days"):
-    st.info(f"Fetching and predicting data for **{selected_company} ({ticker})**...")
+# --- Main App Logic ---
+# Data fetching and modeling now run automatically when a sidebar control is changed
+st.header(f"🔮 Forecast for {selected_company}")
 
-    data = yf.download(ticker, period="3y", interval="1d")
-    if data.empty:
-        st.error("No data found for this company. Please try another.")
-    else:
-        # --- Historical Chart ---
-        st.subheader("📉 Historical Closing Prices")
-        hist_df = data.reset_index()
-        hist_chart = alt.Chart(hist_df).mark_line().encode(
-            x='Date:T',
-            y='Close:Q',
+@st.cache_data(ttl=3600) # Cache data for 1 hour
+def load_data(ticker_symbol):
+    return yf.download(ticker_symbol, period="3y", interval="1d")
+
+data = load_data(ticker)
+
+if data.empty:
+    st.error("No data found for this company. Please try another.")
+else:
+    # --- Train Model ---
+    df = data[['Close']].copy()
+    df['Day'] = np.arange(len(df))
+    X = df[['Day']]
+    y = df['Close']
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(X, y)
+
+    # --- Predict Future ---
+    last_day = df['Day'].iloc[-1]
+    future_days = np.arange(last_day + 1, last_day + 1 + days).reshape(-1, 1)
+    preds = model.predict(future_days)
+
+    future_dates = [data.index[-1] + timedelta(days=i) for i in range(1, days + 1)]
+    pred_df = pd.DataFrame({'Date': future_dates, 'Predicted Close': preds})
+    
+    # Prepare data for combined chart
+    hist_df = data.reset_index()[['Date', 'Close']]
+    hist_df['Type'] = 'Historical'
+    pred_df_chart = pred_df.rename(columns={'Predicted Close': 'Close'})
+    pred_df_chart['Type'] = 'Predicted'
+    
+    combined_df = pd.concat([hist_df, pred_df_chart])
+
+    # --- Create Tabs for Results ---
+    tab1, tab2, tab3 = st.tabs(["📈 Forecast Chart", "🔢 Prediction Data", "🧠 Model Info"])
+
+    with tab1:
+        st.subheader("Combined Price Chart")
+        # Create a layered chart
+        chart = alt.Chart(combined_df).mark_line().encode(
+            x=alt.X('Date:T', title='Date'),
+            y=alt.Y('Close:Q', title='Close Price (USD)'),
+            color=alt.Color('Type:N', scale=alt.Scale(domain=['Historical', 'Predicted'], range=['#1f77b4', '#ff7f0e'])),
             tooltip=['Date:T', 'Close:Q']
         ).properties(
-            width=800,
-            height=350
-        )
-        st.altair_chart(hist_chart, use_container_width=True)
+            height=400
+        ).interactive()
+        st.altair_chart(chart, use_container_width=True)
 
-        # --- Train Model ---
-        df = data[['Close']].copy()
-        df['Day'] = np.arange(len(df))
-        X = df[['Day']]
-        y = df['Close']
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X, y)
-
-        # --- Predict ---
-        last_day = df['Day'].iloc[-1]
-        future_days = np.arange(last_day + 1, last_day + 1 + days).reshape(-1, 1)
-        preds = model.predict(future_days)
-
-        future_dates = [data.index[-1] + timedelta(days=i) for i in range(1, days + 1)]
-        pred_df = pd.DataFrame({'Date': future_dates, 'Predicted Close': preds})
-
-        st.subheader("📅 Predicted Prices")
-        st.dataframe(pred_df.style.format({"Predicted Close": "{:.2f}"}), use_container_width=True)
-
+    with tab2:
+        st.subheader(f"Predicted Prices for the Next {days} Days")
+        st.dataframe(pred_df.style.format({"Predicted Close": "${:.2f}"}), use_container_width=True)
+        
         csv = pred_df.to_csv(index=False).encode('utf-8')
-        st.download_button("⬇️ Download Predictions", csv, f"{selected_company}_predictions.csv", "text/csv")
-
-        # --- Predicted Chart ---
-        pred_chart = alt.Chart(pred_df).mark_line(color='orange').encode(
-            x='Date:T',
-            y='Predicted Close:Q',
-            tooltip=['Date:T', 'Predicted Close:Q']
-        ).properties(
-            width=800,
-            height=350
+        st.download_button(
+            label="⬇️ Download Predictions",
+            data=csv,
+            file_name=f"{selected_company}_predictions.csv",
+            mime="text/csv",
         )
-        st.altair_chart(pred_chart, use_container_width=True)
 
-st.markdown("""
----
-### 🔎 About This App
-StockSense is built using Python, Streamlit, scikit-learn, and yFinance.
-It empowers users to make smarter decisions with historical data insights and machine learning.
-This project is intended for educational and informational purposes.
-""")
+    with tab3:
+        st.subheader("About the Forecasting Model")
+        st.warning("**Disclaimer:** This model is for educational purposes only.", icon="⚠️")
+        st.markdown("""
+        The predictions here are generated by a **Random Forest Regressor** model.
+        - **How it works:** It's trained on the historical relationship between the day number (e.g., day 1, day 2,...) and the closing price.
+        - **Limitations:** This is a simplistic model that acts as a **curve-fitter**. It does **not** perform a true time-series analysis and is unaware of market trends, volatility, or external news.
+        - **Conclusion:** The forecast should be seen as a mathematical extension of the historical price curve, not as financial advice.
+        """)
+
 # --- Footer ---
+st.markdown("---")
 st.markdown("""
     <div style='text-align:center; font-size:13px; color: gray;'>
         Developed by <b>Sharanya Godishala</b> |
@@ -237,4 +210,3 @@ st.markdown("""
         <a href='https://www.linkedin.com/in/sharanya-godishala-a16998313/' target='_blank'>LinkedIn</a>
     </div>
 """, unsafe_allow_html=True)
-
